@@ -1127,7 +1127,7 @@ public class WalletManager {
                     return CODE_ERROR_WALLET_EXISTS;
                 }
                 entity.setBackedUp(true);
-                //entity.setMnemonic(JZWalletUtil.encryptMnemonic(entity.getKey(), mnemonic, password));//导入助记词，不需要保存助记词
+                entity.setMnemonic(JZWalletUtil.encryptMnemonic(entity.getKey(), mnemonic, password));//导入助记词，不需要保存助记词
                 entity.setChainId(NodeManager.getInstance().getChainId());
                 addAndSelectedWalletStatusNotice(entity);
                 WalletDao.insertWalletInfo(entity.buildWalletInfoEntity());
@@ -1371,6 +1371,15 @@ public class WalletManager {
 
     public boolean isValidWallet(Wallet walletEntity, String password) {
         try {
+
+            //子钱包(查询子钱包对应的HD母钱包信息组装到子钱包)
+            if(walletEntity.isHD() && walletEntity.getDepth() == WalletDepth.DEPTH_ONE){
+                Wallet rootWallet = WalletManager.getInstance().getWalletInfoByUuid(walletEntity.getParentId());
+                walletEntity.setMnemonic(rootWallet.getMnemonic());
+                walletEntity.setKey(rootWallet.getKey());
+            }
+
+
             return JZWalletUtil.decrypt(walletEntity.getKey(), password) != null;
         } catch (Exception exp) {
             LogUtils.e(exp.getMessage(),exp.fillInStackTrace());
